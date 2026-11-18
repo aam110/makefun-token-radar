@@ -1,4 +1,4 @@
-// Token Radar (radar-2) — a make.fun token-radar-01 entry (Node 22, standard library only).
+// Token Radar (radar-3) — a make.fun token-radar-01 entry (Node 22, standard library only).
 //
 // The program reads the sealed snapshot from /input/snapshot.json (or --input <file|dir>),
 // scores every rankable pre-token protocol with the model in lib/model.ts, writes the ranked
@@ -77,7 +77,8 @@ if (!dashboardFiles.some((f) => f.endsWith('.css'))) fail('dashboard/ holds no .
 if (!dashboardFiles.some((f) => f.endsWith('.js'))) fail('dashboard/ holds no .js file');
 
 const shots = copyFiles(join(here, 'screenshots'), join(out, 'screenshots'));
-if (shots.length < 3) fail(`screenshots/ holds ${shots.length} image${shots.length === 1 ? '' : 's'}: hand in 3, the board, a detail view and a filtered view`);
+if (shots.length < 3) fail(`screenshots/ holds ${shots.length} image${shots.length === 1 ? '' : 's'}: hand in 3 or 4 — the board, a detail view, a filtered view and the model page`);
+if (shots.length > 4) fail(`screenshots/ holds ${shots.length} images: the gate allows at most 4`);
 for (const name of shots) {
   if (!IMAGE_NAME.test(name)) fail(`screenshots/${name}: a name is letters, digits and . _ -, 1 to 128 characters`);
 }
@@ -86,7 +87,7 @@ for (const name of shots) {
 writeFileSync(join(out, 'dossier.json'), buildDossier(out, { text_max_bytes: TEXT_MAX_BYTES, screenshots: SCREENSHOT_CAPS, dashboard: DASHBOARD_CAPS }));
 
 process.stdout.write(
-  `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} on the watchlist, ${board.length} rows scored (${radar.early_size} early, ${radar.live_size} live set aside)\n` +
+  `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} on the watchlist, ${board.length} rows scored (${radar.early_size} early, ${radar.set_aside_size} set aside)\n` +
     `token radar: total implied value $${radar.total_implied_usd.toLocaleString('en-US')}\n` +
     `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')} (${dashboardFiles.length} files), ${join(out, 'screenshots')} (${shots.length} images) and ${join(out, 'dossier.json')}\n`,
 );

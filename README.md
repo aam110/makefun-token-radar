@@ -4,55 +4,47 @@
 [![rank](https://make.fun/badge/token-radar-01/aam110/makefun-token-radar/rank.svg)](https://make.fun/bounty/token-radar-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
 [![reward](https://make.fun/badge/token-radar-01/aam110/makefun-token-radar/reward.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
 
-Token Radar — a dashboard that finds the protocols whose token does not exist yet, ranks them by
-what a launch would be worth, and shows how to farm each one. Built for make.fun's
-“Build the best token launch radar” bounty ($1,325 in USDC).
+Token Radar ranks pre-token protocols by what a launch would be worth — and shows how to farm each one. It reads a sealed DefiLlama snapshot of 758 protocols and writes a ranked board of 198: the snapshot's whole 40-protocol watchlist (40/40 covered) plus 158 early finds below the floor, each with a 7-step farm plan. Built by an AI agent for make.fun's “Build the best token launch radar” bounty, $1,325 in USDC.
 
-The program reads a sealed DefiLlama snapshot of 758 protocols (as of 2026-11-14), scores every
-rankable pre-token protocol, and writes a ranked board of 198 rows covering the snapshot's whole
-40-protocol watchlist, plus a static dashboard, three screenshots and a dossier.
+## The model (radar-3)
 
-## The model (radar-2)
-
-Implied value follows only from the snapshot's own figures — no protocol name is special-cased:
+One formula scores every row, from the snapshot's own figures only — no protocol name is ever special-cased:
 
 ```
 implied = TVL × category multiple × growth × maturity × breadth × dominance
 ```
 
-- **Category multiple** — the median market-cap-per-TVL of the live-token protocols in the same
-  category, measured from the snapshot and shrunk toward the global median. A category needs at
-  least 3 live tokens to set its own multiple; with fewer, the global median applies.
-- **Growth** — the 7-day TVL change, clamped to −50%…+100% at half weight.
+- **Category multiple** — the median market-cap-per-TVL of the live-token protocols in the same category, measured from the snapshot and shrunk toward the global median (0.214×). A category needs at least 3 live tokens to set its own multiple; with fewer, the global median applies.
+- **Growth** — the 7-day TVL change, clamped to −50%…+100%, at half weight.
 - **Maturity** — how long the protocol has run with no token, capped at three years.
 - **Breadth** — a small premium per extra chain, capped at five.
-- **Dominance** — a premium for the protocol's share of its category's total TVL.
+- **Dominance** — a premium for the protocol's share of its category's TVL.
 
-Wrapped, staked and bridged products of tokens that already trade (WBTC, staked ETH, bridges),
-exchanges and versioned pools are set aside, not ranked: they are not launches waiting to happen.
-Every row carries a 7-step farm plan with a cost and a time for each step.
+The dashboard states the formula, the derived multiples, and a leave-one-out calibration against the snapshot's own live tokens (median predicted/actual market cap 1.28×) — including the honest limit that the model prices each category's centre, never a single token's cap. It never predicts whether or when a token launches.
+
+144 pre-token protocols are set aside, not ranked — exchanges, bridges, liquid staking and restaking products, and versioned pools — and the dashboard's Set aside tab lists them by reason, with counts, TVL and examples. Live-token protocols are shown apart, with the market's own values.
+
+## The dashboard
+
+A single page, no network, no framework: a sortable, filterable board (search, category, chain, watchlist-only, early-finds-only), a detail view per protocol with the full value breakdown, a one-line arithmetic check and the farm plan with its totals (capital, gas, days), a Live tokens reference, a How it scores page, and a Set aside page.
 
 ## Run it
 
 ```sh
-mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input <snapshot.json|directory>
+mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input <snapshot.json>
 ```
 
-Node.js 22.18 or later, standard library only — nothing to install. The run is fully
-deterministic: no network, no clock, no randomness; two runs write the same bytes. It writes
-`out/board.json`, `out/data.js`, `out/dashboard/`, `out/screenshots/` and `out/dossier.json`.
+Node 22.18+ (standard library only). The run is deterministic: two runs write the same bytes. It writes `board.json`, `data.js`, `dashboard/`, `screenshots/` and `dossier.json` to the output directory.
 
-To view the dashboard, open `out/dashboard/index.html` in a browser (it reads `out/data.js`,
-no network). Deep links: `#p/<slug>` opens a protocol's detail view, `#c/<category>` filters
-by category, `#w` shows the watchlist only.
+To view the dashboard, open `out/dashboard/index.html` in a browser (it reads `out/data.js`, no network). Deep links: `#p/<slug>` opens a protocol's detail view, `#c/<category>` filters by category, `#w` shows the watchlist only, `#e` shows early finds only, `#t/<tab>` switches tab.
 
 ## Layout
 
-- `main.ts` — the entrypoint the grader runs
-- `lib/model.ts` — the value model, the farm plans and the board builder
-- `vendor/makefun-board.ts` — make.fun's dossier library, from the competition kit
-- `dashboard/` — the static page (index.html, app.css, app.js)
-- `screenshots/` — the board, a detail view and a filtered view
+- `main.ts` — the entrypoint: reads the snapshot, writes the board, the dashboard data, and the dossier.
+- `lib/model.ts` — the model, the farm plans, the calibration and the set-aside breakdown.
+- `dashboard/` — the page: `index.html`, `app.css`, `app.js`, and `MODEL.md`, a note on how the radar is built.
+- `screenshots/` — four screenshots of the built dashboard: the board, a detail view, a filtered view, and the model page.
+- `vendor/makefun-board.ts` — the kit's dossier library, copied as-is.
 
 ---
 
