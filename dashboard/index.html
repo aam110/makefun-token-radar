@@ -1,15 +1,86 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Token Radar — pre-token protocols ranked by implied value</title>
+<html lang="en"><head><meta charset="utf-8">
+<title>RADAR-5 — Token Launch Radar</title>
 <link rel="stylesheet" href="app.css">
-</head>
-<body>
-<a class="skip" href="#board">Skip to the board</a>
-<main id="board" tabindex="-1" aria-busy="true"></main>
-<script src="../data.js"></script>
+</head><body>
+<header class="top">
+  <div>
+    <h1>RADAR-5 <span>Token Launch Radar</span></h1>
+    <p class="sub">Every value term tested held-out twice (leave-one-out + walk-forward) &middot; token odds from the peers&rsquo; record, with a held-out Brier score &middot; printed ranges with an honesty table &middot; costed farm verdicts in $/hour. Snapshot <b id="asof"></b> &middot; 758 protocols.</p>
+  </div>
+  <div class="badge">TOP-10 TARGET<br><b>walk-forward miss &le; &times;3.0</b></div>
+</header>
+
+<section id="kpis" class="kpis"></section>
+
+<section class="acct">
+  <h2>758-protocol accounting &mdash; every protocol in exactly one group</h2>
+  <div id="acctbar" class="acctbar"></div>
+  <div id="accttxt" class="accttxt"></div>
+</section>
+
+<section class="integrity" id="integrity"></section>
+
+<section class="controls">
+  <h2>Farm controls &mdash; verdicts recompute live</h2>
+  <label>Deposit $ <input id="dep" type="number" value="25000" min="1000" max="500000" step="1000"></label>
+  <label>Drop share <input id="drop" type="range" min="2" max="25" value="10"> <b id="dropv">10%</b></label>
+  <label>Horizon <input id="hor" type="range" min="3" max="36" value="12"> <b id="horv">12 mo</b></label>
+  <span class="note">Defaults: $25,000 &middot; 10% to farmers &middot; 12 months &middot; $15/hour. Gross = token odds &times; drop share &times; implied value &times; deposit / TVL.</span>
+</section>
+
+<nav class="tabs">
+  <button data-tab="board" class="on">Board</button>
+  <button data-tab="evidence">Evidence</button>
+  <button data-tab="live">Live tokens</button>
+  <button data-tab="setaside">Set aside</button>
+</nav>
+
+<main>
+  <section id="tab-board" class="tab on">
+    <div id="focus"></div>
+    <div class="filters">
+      <input id="q" type="search" placeholder="Search protocol or category&hellip;">
+      <select id="fcat"><option value="">All categories</option></select>
+      <select id="fverdict"><option value="">All verdicts</option><option>FARM</option><option>MARGINAL</option><option>SKIP</option></select>
+      <select id="fsort"><option value="rank">Sort: rank (implied value)</option><option value="odds">Sort: token odds</option><option value="net">Sort: net $</option><option value="neth">Sort: net $/hour</option><option value="tvl">Sort: TVL</option></select>
+      <label><input id="fwl" type="checkbox"> Watchlist only (40)</label>
+      <label><input id="fearly" type="checkbox"> Early finds only (TVL &lt; $50M)</label>
+    </div>
+    <div id="count"></div>
+    <table id="board"><thead><tr>
+      <th>#</th><th>Protocol</th><th>TVL</th><th>Implied value (P25&ndash;P75)</th><th>Token odds</th><th>Verdict</th><th>Net $ / $/h</th><th>Gas &middot; hrs</th>
+    </tr></thead><tbody></tbody></table>
+    <div id="detail"></div>
+  </section>
+
+  <section id="tab-evidence" class="tab">
+    <h2>Fitted formula</h2>
+    <p id="formula" class="formula"></p>
+    <p class="note">OLS on the 128 live-token protocols with a positive market cap. A term is kept only if it lowers the held-out miss in BOTH leave-one-out and walk-forward (older trains, newer tests). Category, growth, age and chain count were tested and did not survive.</p>
+    <h2>Value terms &mdash; out-of-sample evidence</h2>
+    <table id="termTable" class="ev"><thead><tr><th>Model (terms added in order)</th><th>Leave-one-out miss</th><th>Walk-forward miss</th><th>Kept?</th></tr></thead><tbody></tbody></table>
+    <h2>Token odds &mdash; out-of-sample evidence</h2>
+    <table id="oddsTable" class="ev"><thead><tr><th>Odds model (terms added in order)</th><th>10-fold CV Brier</th><th>Walk-forward Brier</th><th>Kept?</th></tr></thead><tbody></tbody></table>
+    <h2>Range honesty</h2>
+    <table id="honTable" class="ev"><thead><tr><th>Check (stated)</th><th>Leave-one-out</th><th>Walk-forward</th></tr></thead><tbody></tbody></table>
+    <h2>How the ranges are built</h2>
+    <p class="note">Ranges come from the leave-one-out residual quantiles in log space (P10, P25, P75, P90). A row&rsquo;s P25&ndash;P75 band is the printed range; the honesty table measures, held out, how often the real cap fell inside the stated bands. The model is cross-sectional: it says what a token would be worth if the protocol&rsquo;s record stayed as it is, not whether or when a token is issued.</p>
+  </section>
+
+  <section id="tab-live" class="tab">
+    <h2>Live-token peers &mdash; the 12 largest, actual vs predicted</h2>
+    <p class="note">The value model is fitted on all 128 live-token protocols with a positive market cap. This table shows the 12 largest; the full fit is in board.json&rsquo;s evidence block.</p>
+    <table id="liveTable" class="ev"><thead><tr><th>Protocol</th><th>Category</th><th>TVL</th><th>Real mcap</th><th>Real ratio</th><th>Predicted ratio</th><th>Pred / real</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section id="tab-setaside" class="tab">
+    <h2>Set aside &mdash; the watchlist rule, applied board-wide</h2>
+    <p class="note">A protocol is set aside when it is an excluded category (CEX, Bridge, Canonical Bridge, Liquid Staking, Liquid Restaking, Restaked BTC), its name ends in a version marker, carries a whole word wrapped / staked / staking, or begins with an exchange&rsquo;s name. These are products of a token that already trades, or versions of one.</p>
+    <table id="saTable" class="ev"><thead><tr><th>Reason</th><th>Protocols</th><th>TVL</th></tr></thead><tbody></tbody></table>
+  </section>
+</main>
+<footer>radar-5 &middot; fitted on the sealed snapshot of 2026-11-14 &middot; no network, no randomness &middot; see MODEL.md.</footer>
+<script src="zdata.js"></script>
 <script src="app.js"></script>
-</body>
-</html>
+</body></html>
