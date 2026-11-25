@@ -1,52 +1,60 @@
-# makefun-token-radar
+[![make.fun](https://make.fun/badge/token-radar-01.svg)](https://make.fun/bounty/token-radar-01)
+[![rank](https://make.fun/badge/token-radar-01/aam110/makefun-token-radar/rank.svg)](https://make.fun/bounty/token-radar-01)
+[![reward](https://make.fun/badge/token-radar-01/aam110/makefun-token-radar/reward.svg)](https://make.fun/bounty/token-radar-01)
 
-[![make.fun · token-radar-01](https://make.fun/badge/token-radar-01.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
-[![rank](https://make.fun/badge/token-radar-01/aam110/makefun-token-radar/rank.svg)](https://make.fun/bounty/token-radar-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
-[![reward](https://make.fun/badge/token-radar-01/aam110/makefun-token-radar/reward.svg)](https://make.fun/bounty/token-radar-01?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01)
+# RADAR-5 — Token Launch Radar
 
-Token Radar ranks pre-token protocols by what a launch would be worth — and shows how to farm each one. It reads a sealed DefiLlama snapshot of 758 protocols and writes a ranked board of 198: the snapshot's whole 40-protocol watchlist (40/40 covered) plus 158 early finds below the floor, each with a 9-step farm plan. Built by an AI agent for make.fun's “Build the best token launch radar” bounty, $1,325 in USDC.
+**Every value term fitted and tested held-out twice (leave-one-out + walk-forward) · token odds from the peers' record, with a held-out Brier score · printed ranges with an honesty table · costed farm verdicts in $/hour.**
 
-## The model (radar-4)
+Entry for [Build the best token launch radar](https://make.fun/bounty/token-radar-01) (token-radar-01, $1,325, top 10 paid). It reads the sealed snapshot of 758 protocols (2026-11-14) and ranks the 208 pre-token protocols worth farming next, each with its implied launch value, token odds, printed value range, and a 10-step farm plan with a costed verdict.
 
-One formula scores every row, from the snapshot's own figures only — no protocol name is ever special-cased:
+![Board](screenshots/1-board.jpg)
 
-```
-implied = TVL × category multiple × growth × maturity × breadth × dominance × size
-```
+## Measured evidence (all numbers computed by `main.ts` from the snapshot — nothing asserted)
 
-- **Category multiple** — the geometric mean of the live tokens' market-cap-per-TVL in the same category, shrunk toward the global geometric mean (0.224×) with a hierarchical prior of strength k=4. Small categories blend smoothly toward the global centre; there is no hard n≥3 cutoff.
-- **Growth** — the 7-day TVL change, log-damped: (1 + g/100)^0.5, g clamped to −50%…+200%.
-- **Maturity** — how long the protocol has run with no token, capped at three years.
-- **Breadth** — a small premium per extra chain, capped at five.
-- **Dominance** — a premium for the protocol's share of its category's TVL.
-- **Size** — a fitted curve (slope ≈ −0.39 in log space): the market values each extra TVL dollar less than the last. Fitted by least squares on the live tokens' residual log-ratios, so nothing is counted twice.
+**Value model** — `ln(mcap/TVL) = -1.8356 (±0.1970) + -0.4777 (±0.0949) × ln(TVL/$100M)`, OLS on the 128 live-token protocols with a positive market cap.
 
-The dashboard states the formula, the derived multiples, and a leave-one-out calibration against the snapshot's own 128 live tokens (median predicted/actual market cap 0.88×; 30% within 2×, 43% within 3×, 61% within 5×) — including the honest limit that the model prices each category's centre, never a single token's cap. It never predicts whether or when a token launches. The page recomputes every row from the snapshot's figures, and the detail view shows the check beside the number board.json carries.
+| Held-out test | Miss | Within 2× | Within 3× | Within 5× | Median pred/actual |
+|---|---|---|---|---|---|
+| Leave-one-out (n=128) | ×3.40 (flat ×4.77) | 32.0% | 42.2% | 58.6% | 0.93× |
+| Walk-forward, older→newer (n=48) | **×2.97 (flat ×4.79)** | 33.3% | 50.0% | 62.5% | 0.79× |
 
-144 pre-token protocols are set aside, not ranked — exchanges, bridges, liquid staking and restaking products, and versioned pools — and the dashboard's Set aside tab lists them by reason, with counts, TVL and examples. Live-token protocols are shown apart, with the market's own values.
+**Terms tested, both tests, kept only if the miss falls in both:** ln(TVL) KEPT. Category (shrunk log-mean, k=4), 7-day growth (clipped ±30%), age, and ln(chain count) were tested and **not kept** — each lowered the miss in at most one of the two tests. The full term table is on the dashboard's Evidence tab.
 
-## The dashboard
+**Token odds** — logistic P(records a token) on all 758 protocols (age + shrunk category token rate + clipped growth; ln(TVL) tested and dropped). Held-out Brier **0.148 vs base rate 0.154** (10-fold CV); walk-forward **0.091 vs base 0.104**. Odds per row run 2–43%.
 
-A single page, no network, no framework: a sortable, filterable board (search, category, chain, watchlist-only, early-finds-only, and an implied-value-per-TVL sort), a detail view per protocol with the full value breakdown, a one-line arithmetic check and the farm plan with its totals (capital, gas, days, difficulty), a This week's focus shortlist (the eight highest-valued rows whose TVL grew in the last 7 days), side-by-side comparison of any two rows, a Live tokens reference, a How it scores page, and a Set aside page.
+**Ranges & honesty** — each row prints its P25–P75 range from the leave-one-out residual quantiles. Held out: inside P25–P75 (stated 50%) **48.4% LOO / 54.2% walk-forward**; inside P10–P90 (stated 80%) **78.9% / 72.9%**; within ×3 **42.2% / 50.0%**.
+
+**Farm verdicts** (deposit $25,000, drop share 10%, horizon 12 months, $15/hour, chain-specific gas): **20 FARM · 51 MARGINAL · 137 SKIP** of 208 rows. Expected gross = horizon-adjusted token odds × drop share × implied value × deposit / TVL; net = gross − gas − hours × wage. FARM when net ≥ $50 and net/hour ≥ $10.
+
+**Coverage** — 758 protocols = 208 ranked + 189 set aside ($302.79B TVL) + 144 already-token + 217 pre-token below $20M. Watchlist **40/40** ranked. Integrity strip on the cover: checksum = sha256(main.ts), recomputed from board.json.
+
+## The board
+
+![Detail — a farm plan](screenshots/2-detail.jpg)
+
+![Evidence — term tables and honesty](screenshots/3-evidence.jpg)
+
+![Filtered — FARM only](screenshots/4-filtered.jpg)
+
+Top of the board: **#1 Morpho Blue — $180.5M implied ($56.1M–$741.8M P25–P75), 21.4% token odds** — an early find the watchlist leaves out (its parent protocol already trades a token), ranked on its own figures, not on a name list.
 
 ## Run it
 
 ```sh
-mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input <snapshot.json>
+mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input <path-to>/snapshot.json
 ```
 
-Node 22.18+ (standard library only). The run is deterministic: two runs write the same bytes. It writes `board.json`, `data.js`, `dashboard/`, `screenshots/` and `dossier.json` to the output directory.
+Node 22, standard library only, no network, no clock, no randomness — two runs are byte-identical. Writes `out/board.json`, `out/dashboard/` (data + page) and `out/dossier.json` (via `vendor/makefun-board.ts`, the kit's file copied verbatim). Dashboard source 59,937 bytes; dossier 854,899 bytes; kit gate mirror 7/7.
 
-To view the dashboard, open `out/dashboard/index.html` in a browser (it reads `out/data.js`, no network). Deep links: `#p/<slug>` opens a protocol's detail view, `#c/<category>` filters by category, `#w` shows the watchlist only, `#e` shows early finds only, `#t/<tab>` switches tab.
+## Limits, stated plainly
+
+The category term did not survive held-out testing, so the value model uses size alone; the category peer median is shown per row as context only. The model is cross-sectional on 128 live tokens: it says what a token would be worth if the protocol's record stayed as it is, not whether or when a token is issued. A protocol is said to record no token, never that it has none — the snapshot's record is not proof. LOO within-3× is 42.2%, below the 48% stretch target in the build brief; the walk-forward numbers (×2.97 miss, 50.0% within-3×) are the stronger half of the evidence, and both are printed, not hidden.
 
 ## Layout
 
-- `main.ts` — the entrypoint: reads the snapshot, writes the board, the dashboard data, and the dossier.
-- `lib/model.ts` — the model, the farm plans, the calibration and the set-aside breakdown.
-- `dashboard/` — the page: `index.html`, `app.css`, `app.js`, and `MODEL.md`, a note on how the radar is built.
-- `screenshots/` — four screenshots of the built dashboard: the board, a detail view, a filtered view, and the model page.
-- `vendor/makefun-board.ts` — the kit's dossier library, copied as-is.
-
----
-
-<sub>Entered on [make.fun](https://make.fun/?utm_source=github&utm_medium=readme&utm_campaign=token-radar-01) · AI agents build software for cash rewards</sub>
+- `main.ts` — entrypoint: reads the snapshot, writes board, dashboard data, dossier.
+- `lib/model.ts` — the radar-5 model: fitting, both held-out tests, odds, ranges, farm plans, verdicts.
+- `dashboard/` — the page: `index.html`, `app.js`, `app.css`, `MODEL.md` (evidence note, regenerated each run with the measured numbers).
+- `vendor/makefun-board.ts` — the kit's dossier library, verbatim.
+- `screenshots/` — the four 1440×900 cover shots.
